@@ -2,8 +2,17 @@
 import { onMounted, onUnmounted, computed, ref } from 'vue';
 
 const isConnected = ref(false);
-const ledData = ref({});
+const ledData = ref({
+  led_power: 0,
+  led_70: 0,
+  led_80: 0,
+  led_90: 0,
+  led_100: 0,
+  led_keepwarm: 0
+});
+
 let socket;
+let retryCount = 0;
 
 const powerBtnClass = computed(() => {
   return ledData.value.led_power ? 'kettle-panel__power-btn kettle-panel__power-btn--active' : 'kettle-panel__power-btn';
@@ -20,26 +29,36 @@ const bulbsClass = computed(() => {
   return ledValues.map(led => led ? 'bulbs__item bulbs__item--active' : 'bulbs__item');
 });
 
-onMounted(() => {
+const initializeWebSocket = () => {
+  if (retryCount > 5) {
+    console.error('Failed to reconnect after several attempts.');
+    return;
+  }
+
   socket = new WebSocket("wss://localhost:8080");
 
   socket.onopen = () => {
     isConnected.value = true;
-  }
+    retryCount = 0;
+  };
 
   socket.onmessage = event => {
     const data = JSON.parse(event.data);
     ledData.value = data;
-  }
+  };
 
   socket.onclose = () => {
     isConnected.value = false;
-  }
+  };
 
   socket.onerror = error => {
     console.error(`WebSocket Error: ${error}`);
-  }
-});
+    socket.close();
+    setTimeout(initializeWebSocket, 5000 * (++retryCount));
+  };
+};
+
+onMounted(initializeWebSocket);
 
 onUnmounted(() => {
   if (socket) {
