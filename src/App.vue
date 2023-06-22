@@ -188,4 +188,17 @@ const toggleBtn = (btnId) => {
     gap: 30px;
   }
 }
+
+@media (min-width: 900px) {
+
+  .kettle-panel {
+    justify-content: center;
+    gap: 80px;
+  }
+
+  .kettle-panel__temp-controls {
+    height: auto;
+  }
+
+}
 </style>
