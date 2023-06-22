@@ -10,24 +10,8 @@ const ledData = ref({
   led_100: 0,
   led_keepwarm: 0
 });
-
 let socket;
 let retryCount = 0;
-
-const powerBtnClass = computed(() => {
-  return ledData.value.led_power ? 'kettle-panel__power-btn kettle-panel__power-btn--active' : 'kettle-panel__power-btn';
-});
-
-const warmBtnClass = computed(() => {
-  return ledData.value.led_keepwarm.value ? 'temp-controls__warm-btn temp-controls__warm-btn--active' : 'temp-controls__warm-btn';
-});
-
-const bulbsClass = computed(() => {
-  const { led_70, led_80, led_90, led_100 } = ledData.value;
-  const ledValues = [led_70, led_80, led_90, led_100];
-
-  return ledValues.map(led => led ? 'bulbs__item bulbs__item--active' : 'bulbs__item');
-});
 
 const initializeWebSocket = () => {
   if (retryCount > 5) {
@@ -64,6 +48,21 @@ onUnmounted(() => {
   if (socket) {
     socket.close();
   }
+});
+
+const powerBtnClass = computed(() => {
+  return ledData.value.led_power ? 'kettle-panel__power-btn kettle-panel__power-btn--active' : 'kettle-panel__power-btn';
+});
+
+const warmBtnClass = computed(() => {
+  return ledData.value.led_keepwarm.value ? 'temp-controls__warm-btn temp-controls__warm-btn--active' : 'temp-controls__warm-btn';
+});
+
+const bulbsClass = computed(() => {
+  const { led_70, led_80, led_90, led_100 } = ledData.value;
+  const ledValues = [led_70, led_80, led_90, led_100];
+
+  return ledValues.map(led => led ? 'bulbs__item bulbs__item--active' : 'bulbs__item');
 });
 
 let id = 0;
