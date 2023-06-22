@@ -1,0 +1,33 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: 'Space Mono', monospace;
+}
+
+html {
+  background-image: linear-gradient(to top, #c71d6f 0%, #d09693 100%);
+}
+
+#app {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+button {
+  box-shadow: 0px 0px 40px -4px #690c39d3;
+  background-color: #ffffff57;
+  color: #ffffff65;
+  border: none;
+  padding: 5px;
+  border-radius: 30px;
+  font: inherit;
+  cursor: pointer;
+  outline: inherit;
+  transition: all 0.3s ease-in-out;
+}
+
