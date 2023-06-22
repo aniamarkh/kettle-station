@@ -28,7 +28,8 @@ const initializeWebSocket = () => {
 
   socket.onmessage = event => {
     const data = JSON.parse(event.data);
-    ledData.value = data;
+    console.log(data);
+    ledData.value = data.d;
   };
 
   socket.onclose = () => {
