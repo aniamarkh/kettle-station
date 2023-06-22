@@ -55,7 +55,7 @@ const powerBtnClass = computed(() => {
 });
 
 const warmBtnClass = computed(() => {
-  return ledData.value.led_keepwarm.value ? 'temp-controls__warm-btn temp-controls__warm-btn--active' : 'temp-controls__warm-btn';
+  return ledData.value.led_keepwarm ? 'temp-controls__warm-btn temp-controls__warm-btn--active' : 'temp-controls__warm-btn';
 });
 
 const bulbsClass = computed(() => {
