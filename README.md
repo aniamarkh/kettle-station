@@ -1,35 +1,19 @@
-# vue-project
+This is a web control panel for my friend's smart kettle. Only he can check it :(
 
-This template should help get you started developing with Vue 3 in Vite.
+## Getting Started
 
-## Recommended IDE Setup
+To run this project locally, follow these steps:
 
-[VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur) + [TypeScript Vue Plugin (Volar)](https://marketplace.visualstudio.com/items?itemName=Vue.vscode-typescript-vue-plugin).
+1. Clone the repository:
 
-## Customize configuration
+`git clone https://github.com/aniamarkh/kettle-station.git`
 
-See [Vite Configuration Reference](https://vitejs.dev/config/).
+2. Install the dependencies:
 
-## Project Setup
+`npm install`
 
-```sh
-npm install
-```
+3. Compile and minify for Production:
 
-### Compile and Hot-Reload for Development
+`npm run build && npm run preview`
 
-```sh
-npm run dev
-```
-
-### Compile and Minify for Production
-
-```sh
-npm run build
-```
-
-### Lint with [ESLint](https://eslint.org/)
-
-```sh
-npm run lint
-```
+You can see a preview of a build at localhost:4173
