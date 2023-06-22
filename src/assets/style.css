@@ -31,3 +31,13 @@ button {
   transition: all 0.3s ease-in-out;
 }
 
+button:disabled {
+  background-color: #ffffff1a;
+  color: #ffffff1a;
+}
+
+@media (hover: hover) {
+  button:hover {
+    transform: scale(1.05);
+  }
+}
