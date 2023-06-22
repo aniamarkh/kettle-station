@@ -48,21 +48,8 @@ onUnmounted(() => {
 });
 
 let id = 0;
-
-const togglePowerBtn = () => {
-  if (isConnected.value) socket.send(JSON.stringify({ o: 'button_press', d: 0, i: ++id }));
-};
-
-const toggleTempDown = () => {
-  if (isConnected.value) socket.send(JSON.stringify({ o: 'button_press', d: 1, i: ++id }));
-};
-
-const toggleTempUp = () => {
-  if (isConnected.value) socket.send(JSON.stringify({ o: 'button_press', d: 2, i: ++id }));
-};
-
-const toggleWarmBtn = () => {
-  if (isConnected.value) socket.send(JSON.stringify({ o: 'button_press', d: 3, i: ++id }));
+const toggleBtn = (btnId) => {
+  if (isConnected.value) socket.send(JSON.stringify({ o: 'button_press', d: btnId, i: ++id }));
 };
 
 </script>
@@ -77,12 +64,12 @@ const toggleWarmBtn = () => {
         <div :class="bulbsClass[3]"></div>
       </div>
       <div class="temp-controls__btns">
-        <button @click="toggleTempDown" :disabled="!isConnected" class="temp-controls__btn">−</button>
-        <button @click="toggleTempUp" :disabled="!isConnected" class="temp-controls__btn">+</button>
+        <button @click="toggleTempDown(1)" :disabled="!isConnected" class="temp-controls__btn">−</button>
+        <button @click="toggleTempUp(2)" :disabled="!isConnected" class="temp-controls__btn">+</button>
       </div>
-      <button @click="toggleWarmBtn" :class="warmBtnClass" :disabled="!isConnected">keep warm</button>
+      <button @click="toggleBtn(3)" :class="warmBtnClass" :disabled="!isConnected">keep warm</button>
     </div>
-    <button @click="togglePowerBtn" :class="powerBtnClass" :disabled="!isConnected"></button>
+    <button @click="toggleBtn(0)" :class="powerBtnClass" :disabled="!isConnected"></button>
   </main>
 </template>
 
