@@ -18,7 +18,7 @@ const initializeWebSocket = () => {
     console.error('Failed to reconnect after several attempts.');
     return;
   }
-  console.log(window.location);
+
   socket = new WebSocket(((window.location.protocol === "https:") ? "wss://" : "ws://") + window.location.host + "/ws");
 
   socket.onopen = () => {
