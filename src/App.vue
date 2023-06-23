@@ -28,7 +28,6 @@ const initializeWebSocket = () => {
 
   socket.onmessage = event => {
     const data = JSON.parse(event.data);
-    console.log(data);
     ledData.value = data.d;
   };
 
@@ -83,8 +82,8 @@ const toggleBtn = (btnId) => {
         <div :class="bulbsClass[3]"></div>
       </div>
       <div class="temp-controls__btns">
-        <button @click="toggleTempDown(1)" :disabled="!isConnected" class="temp-controls__btn">−</button>
-        <button @click="toggleTempUp(2)" :disabled="!isConnected" class="temp-controls__btn">+</button>
+        <button @click="toggleBtn(1)" :disabled="!isConnected" class="temp-controls__btn">−</button>
+        <button @click="toggleBtn(2)" :disabled="!isConnected" class="temp-controls__btn">+</button>
       </div>
       <button @click="toggleBtn(3)" :class="warmBtnClass" :disabled="!isConnected">keep warm</button>
     </div>
@@ -97,10 +96,10 @@ const toggleBtn = (btnId) => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
+  gap: 60px;
   height: 100%;
   width: 100%;
-  padding: 120px 30px 100px;
 }
 
 .kettle-panel__temp-controls {
@@ -109,7 +108,6 @@ const toggleBtn = (btnId) => {
   gap: 60px;
   align-items: center;
   justify-content: flex-start;
-  height: calc(100% - 150px);
   width: 240px;
 }
 
@@ -174,32 +172,5 @@ const toggleBtn = (btnId) => {
 .kettle-panel__power-btn--active {
   box-shadow: 0px 0px 30px 15px #ffffffef;
   background-image: url(assets/power-on.svg);
-}
-
-@media (max-height: 670px) {
-  .kettle-panel {
-    padding: 60px 30px 80px;
-  }
-
-  .temp-controls__btns {
-    margin-top: -10px;
-  }
-
-  .kettle-panel__temp-controls {
-    gap: 30px;
-  }
-}
-
-@media (min-width: 900px) {
-
-  .kettle-panel {
-    justify-content: center;
-    gap: 80px;
-  }
-
-  .kettle-panel__temp-controls {
-    height: auto;
-  }
-
 }
 </style>
