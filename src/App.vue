@@ -1,7 +1,7 @@
 <script setup>
 import { onMounted, onUnmounted, computed, ref } from 'vue';
 
-const isConnected = ref(true);
+const isConnected = ref(false);
 const isWaitingForResponse = ref(false);
 const isError = ref(false);
 const isSuccess = ref(false);
@@ -45,6 +45,7 @@ const initializeWebSocket = () => {
   };
 
   socket.onerror = error => {
+    showError();
     console.error(`WebSocket Error: ${error}`);
     socket.close();
     setTimeout(initializeWebSocket, 5000 * (++retryCount));
