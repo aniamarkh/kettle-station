@@ -67,6 +67,8 @@ const bulbsClass = computed(() => {
 
 let id = 0;
 const toggleBtn = (btnId) => {
+  if (btnId === 3) ledData.value.led_keepwarm = !ledData.value.led_keepwarm;
+  if (btnId === 0) ledData.value.led_power = !ledData.value.led_power;
   if (isConnected.value) socket.send(JSON.stringify({ o: 'button_press', d: btnId, i: ++id }));
 };
 
