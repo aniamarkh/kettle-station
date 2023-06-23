@@ -1,7 +1,11 @@
 <script setup>
 import { onMounted, onUnmounted, computed, ref } from 'vue';
 
-const isConnected = ref(false);
+const isConnected = ref(true);
+const isWaitingForResponse = ref(false);
+const isError = ref(false);
+const isSuccess = ref(false);
+
 const ledData = ref({
   led_power: 0,
   led_70: 0,
@@ -10,6 +14,7 @@ const ledData = ref({
   led_100: 0,
   led_keepwarm: 0
 });
+
 let socket;
 let retryCount = 0;
 
@@ -28,7 +33,11 @@ const initializeWebSocket = () => {
 
   socket.onmessage = event => {
     const data = JSON.parse(event.data);
-    ledData.value = data.d;
+    isWaitingForResponse.value = false;
+
+    if (data.t === 'status' && data.d !== 'ok') ledData.value = data.d;
+    if (data.e) showError();
+    if (data.d === 'ok') showConfirmation();
   };
 
   socket.onclose = () => {
@@ -69,13 +78,39 @@ let id = 0;
 const toggleBtn = (btnId) => {
   if (btnId === 3) ledData.value.led_keepwarm = !ledData.value.led_keepwarm;
   if (btnId === 0) ledData.value.led_power = !ledData.value.led_power;
-  if (isConnected.value) socket.send(JSON.stringify({ o: 'button_press', d: btnId, i: ++id }));
+  if (isConnected.value) {
+    isWaitingForResponse.value = true;
+    socket.send(JSON.stringify({ o: 'button_press', d: btnId, i: ++id }));
+  }
 };
 
+const disableBtns = computed(() => {
+  return !isConnected.value || isWaitingForResponse.value;
+});
+
+const showError = () => {
+  isError.value = true;
+  setTimeout(() => {
+    isError.value = false;
+  }, 2000);
+}
+
+const showConfirmation = () => {
+  isSuccess.value = true;
+  setTimeout(() => {
+    isSuccess.value = false;
+  }, 2000);
+}
 </script>
 
 <template>
   <main class="kettle-panel">
+    <div class="kettle-panel__status">
+      <Transition>
+        <h3 v-if="isSuccess">✨ success 💫</h3>
+        <h3 v-else-if="isError"> 🤡 error 🤡 </h3>
+      </Transition>
+    </div>
     <div class="kettle-panel__temp-controls">
       <div class="temp-controls__bulbs">
         <div :class="bulbsClass[0]"></div>
@@ -84,12 +119,12 @@ const toggleBtn = (btnId) => {
         <div :class="bulbsClass[3]"></div>
       </div>
       <div class="temp-controls__btns">
-        <button @click="toggleBtn(1)" :disabled="!isConnected" class="temp-controls__btn">−</button>
-        <button @click="toggleBtn(2)" :disabled="!isConnected" class="temp-controls__btn">+</button>
+        <button @click="toggleBtn(1)" :disabled="disableBtns" class="temp-controls__btn">−</button>
+        <button @click="toggleBtn(2)" :disabled="disableBtns" class="temp-controls__btn">+</button>
       </div>
-      <button @click="toggleBtn(3)" :class="warmBtnClass" :disabled="!isConnected">keep warm</button>
+      <button @click="toggleBtn(3)" :class="warmBtnClass" :disabled="disableBtns">keep warm</button>
     </div>
-    <button @click="toggleBtn(0)" :class="powerBtnClass" :disabled="!isConnected"></button>
+    <button @click="toggleBtn(0)" :class="powerBtnClass" :disabled="disableBtns"></button>
   </main>
 </template>
 
@@ -99,15 +134,23 @@ const toggleBtn = (btnId) => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 60px;
+  gap: 50px;
   height: 100%;
   width: 100%;
+  padding-bottom: 50px;
+}
+
+.kettle-panel__status {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  height: 30px;
 }
 
 .kettle-panel__temp-controls {
   display: flex;
   flex-direction: column;
-  gap: 60px;
+  gap: 40px;
   align-items: center;
   justify-content: flex-start;
   width: 240px;

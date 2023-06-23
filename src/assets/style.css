@@ -3,6 +3,7 @@
   margin: 0;
   padding: 0;
   font-family: 'Space Mono', monospace;
+  color: #fff;
 }
 
 html {
@@ -38,8 +39,7 @@ button {
 }
 
 button:disabled {
-  background-color: #ffffff1a;
-  color: #ffffff2c;
+  cursor: default;
 }
 
 @media (hover: hover) {
@@ -51,4 +51,14 @@ button:disabled {
     transform: none;
     cursor: default;
   }
+}
+
+.v-enter-active,
+.v-leave-active {
+  transition: opacity 0.2s ease-in-out;
+}
+
+.v-enter-from,
+.v-leave-to {
+  opacity: 0;
 }
