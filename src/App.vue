@@ -3,10 +3,11 @@ import { onMounted, onUnmounted, computed, ref } from 'vue';
 import StatusMessage from './components/StatusMessage.vue';
 import TempControls from './components/TempControls.vue';
 
+const isConnecting = ref(false);
 const isConnected = ref(false);
 const isWaitingForResponse = ref(false);
 const isError = ref(false);
-const isSuccess = ref(false);
+
 const pressedButtonId = ref(null);
 const ledData = ref({
   led_power: 0,
@@ -21,7 +22,9 @@ let socket;
 let retryCount = 0;
 
 const initializeWebSocket = () => {
+  isConnecting.value = true;
   if (retryCount > 5) {
+    showError();
     console.error('Failed to reconnect after several attempts.');
     return;
   }
@@ -30,7 +33,9 @@ const initializeWebSocket = () => {
   socket = new WebSocket('ws://localhost:8000/');
 
   socket.onopen = () => {
+    isConnecting.value = false;
     isConnected.value = true;
+    showConnected();
     retryCount = 0;
   };
 
@@ -42,7 +47,6 @@ const initializeWebSocket = () => {
     if (data.t === 'response' && data.d === 'ok' && data.i === messageId) {
       if (pressedButtonId.value === 0) ledData.value.led_power = !ledData.value.led_power;
       if (pressedButtonId.value === 3) ledData.value.led_keepwarm = !ledData.value.led_keepwarm;
-      showConfirmation();
     }
 
     if (data.t === 'status') ledData.value = data.d;
@@ -76,6 +80,10 @@ const powerBtnClass = computed(() => {
   return ledData.value.led_power ? 'kettle-panel__power-btn kettle-panel__power-btn--active' : 'kettle-panel__power-btn';
 });
 
+const disableBtns = computed(() => {
+  return !isConnected.value || isWaitingForResponse.value;
+});
+
 let messageId = 0;
 const toggleBtn = (btnId) => {
   if (isConnected.value) {
@@ -85,28 +93,26 @@ const toggleBtn = (btnId) => {
   }
 };
 
-const disableBtns = computed(() => {
-  return !isConnected.value || isWaitingForResponse.value;
-});
 
 const showError = () => {
   isError.value = true;
   setTimeout(() => {
     isError.value = false;
   }, 2000);
-}
+};
 
-const showConfirmation = () => {
-  isSuccess.value = true;
+const isConnectedMessage = ref(false);
+const showConnected = () => {
+  isConnectedMessage.value = true;
   setTimeout(() => {
-    isSuccess.value = false;
+    isConnectedMessage.value = false;
   }, 2000);
-}
+};
 </script>
 
 <template>
   <main class="kettle-panel">
-    <StatusMessage :is-success="isSuccess" :is-error="isError" />
+    <StatusMessage :is-connected-message="isConnectedMessage" :is-connecting="isConnecting" :is-error="isError" />
     <TempControls :is-connected="isConnected" :is-waiting-for-response="isWaitingForResponse" :led-data="ledData"
       :disable-btns="disableBtns" @toggle-btn="toggleBtn" />
     <button @click="toggleBtn(0)" :class="powerBtnClass" :disabled="disableBtns"></button>
@@ -124,7 +130,6 @@ const showConfirmation = () => {
   width: 100%;
   padding-bottom: 50px;
 }
-
 
 .kettle-panel__power-btn {
   width: 150px;
