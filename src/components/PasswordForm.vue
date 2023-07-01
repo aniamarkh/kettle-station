@@ -22,7 +22,8 @@ const onSubmit = () => {
 <template>
   <form class="password-form" @submit.prevent="onSubmit">
     <label class="password-form__label">Please enter the kettle password</label>
-    <input :class="inputClass" type="password" placeholder="here" v-model="password" />
+    <input autocomplete="on" @input="isError = false" :class="inputClass" type="password" placeholder="here"
+      v-model="password" />
     <button class="password-form__btn">ok!</button>
   </form>
 </template>
@@ -48,11 +49,11 @@ const onSubmit = () => {
   padding: 10px;
   border-radius: 20px;
   font-size: 18px;
-  width: 100%;
+  width: 280px;
 }
 
 .password-form__input--error {
-  background-color: red;
+  box-shadow: inset 0 0 0 3px #ff0000a4;
   color: white;
 }
 

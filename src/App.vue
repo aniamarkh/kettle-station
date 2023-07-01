@@ -6,9 +6,8 @@ import PasswordForm from './components/PasswordForm.vue';
 const password = ref(null);
 
 const onPasswordSubmitted = (submittedPassword) => {
-  console.log(submittedPassword);
   password.value = submittedPassword;
-  localStorage.setItem('kettlepass', submittedPassword);
+  localStorage.setItem('kettlepass', password.value);
 };
 
 onMounted(() => {

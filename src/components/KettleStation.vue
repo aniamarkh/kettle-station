@@ -1,14 +1,18 @@
 <script setup>
 import { onMounted, onUnmounted, computed, ref } from 'vue';
+import CryptoJS, { SHA256 } from 'crypto-js';
 import StatusMessage from './StatusMessage.vue';
 import TempControls from './TempControls.vue';
+
+const props = defineProps({
+  password: String,
+});
 
 const isConnecting = ref(false);
 const isConnected = ref(false);
 const isWaitingForResponse = ref(false);
 const isError = ref(false);
 
-const pressedButtonId = ref(null);
 const ledData = ref({
   led_power: 0,
   led_70: 0,
@@ -23,6 +27,7 @@ let retryCount = 0;
 
 const initializeWebSocket = () => {
   isConnecting.value = true;
+
   if (retryCount > 5) {
     showError();
     console.error('Failed to reconnect after several attempts.');
@@ -31,21 +36,36 @@ const initializeWebSocket = () => {
     return;
   }
 
-  // socket = new WebSocket(((window.location.protocol === "https:") ? "wss://" : "ws://") + window.location.host + "/ws");
-  socket = new WebSocket('ws://localhost:8001/');
+  socket = new WebSocket(((window.location.protocol === "https:") ? "wss://" : "ws://") + window.location.host + "/ws");
+  // socket = new WebSocket('ws://localhost:8080/');
 
   socket.onopen = () => {
-    isConnecting.value = false;
-    isConnected.value = true;
-    showConnected();
     retryCount = 0;
   };
-
 
   socket.onmessage = event => {
     const data = JSON.parse(event.data);
 
+    if (data.o === 'challenge') {
+      socket.send(JSON.stringify(
+        {
+          o: 'challenge',
+          d: SHA256(props.password + data.d).toString(CryptoJS.enc.Hex),
+        }
+      ));
+    };
+
+    if (data.o === 'challenge_response') {
+      if (data.d) {
+        isConnected.value = true;
+        showConnected();
+      } else {
+        showError();
+      }
+    };
+
     if (data.t === 'status') ledData.value = data.d;
+
     if (data.e) {
       console.log(`Error Occurred: ${data.e}`);
       showError();
@@ -83,6 +103,8 @@ const disableBtns = computed(() => {
 });
 
 let messageId = 0;
+const pressedButtonId = ref(null);
+
 const toggleBtn = (btnId) => {
   if (isConnected.value) {
     isWaitingForResponse.value = true;
