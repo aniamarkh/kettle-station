@@ -29,8 +29,8 @@ const initializeWebSocket = () => {
     return;
   }
 
-  // socket = new WebSocket(((window.location.protocol === "https:") ? "wss://" : "ws://") + window.location.host + "/ws");
-  socket = new WebSocket('ws://localhost:8000/');
+  socket = new WebSocket(((window.location.protocol === "https:") ? "wss://" : "ws://") + window.location.host + "/ws");
+  // socket = new WebSocket('ws://localhost:8000/');
 
   socket.onopen = () => {
     isConnecting.value = false;
@@ -42,18 +42,14 @@ const initializeWebSocket = () => {
 
   socket.onmessage = event => {
     const data = JSON.parse(event.data);
-    isWaitingForResponse.value = false;
-
-    if (data.t === 'response' && data.d === 'ok' && data.i === messageId) {
-      if (pressedButtonId.value === 0) ledData.value.led_power = !ledData.value.led_power;
-      if (pressedButtonId.value === 3) ledData.value.led_keepwarm = !ledData.value.led_keepwarm;
-    }
 
     if (data.t === 'status') ledData.value = data.d;
     if (data.e) {
       console.log(`Error Occurred: ${data.e}`);
       showError();
     };
+
+    isWaitingForResponse.value = false;
   };
 
   socket.onclose = () => {
@@ -64,7 +60,7 @@ const initializeWebSocket = () => {
     showError();
     console.error(`WebSocket Error: ${error}`);
     socket.close();
-    setTimeout(initializeWebSocket, 5000 * (++retryCount));
+    setTimeout(initializeWebSocket, 1000 * (++retryCount));
   };
 };
 
@@ -92,7 +88,6 @@ const toggleBtn = (btnId) => {
     socket.send(JSON.stringify({ o: 'button_press', d: btnId, i: ++messageId }));
   }
 };
-
 
 const showError = () => {
   isError.value = true;
