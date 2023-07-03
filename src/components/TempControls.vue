@@ -1,5 +1,5 @@
 <script setup>
-import { computed, defineEmits } from 'vue';
+import { computed } from 'vue';
 
 const props = defineProps({
   isConnected: Boolean,
@@ -11,14 +11,14 @@ const props = defineProps({
 const emit = defineEmits(['toggle-btn']);
 
 const warmBtnClass = computed(() => {
-  return props.ledData.led_keepwarm ? 'temp-controls__warm-btn temp-controls__warm-btn--active' : 'temp-controls__warm-btn';
+  return props.ledData.led_keepwarm && props.isConnected ? 'temp-controls__warm-btn temp-controls__warm-btn--active' : 'temp-controls__warm-btn';
 });
 
 const bulbsClass = computed(() => {
   const { led_70, led_80, led_90, led_100 } = props.ledData;
   const ledValues = [led_70, led_80, led_90, led_100];
 
-  return ledValues.map(led => led ? 'bulbs__item bulbs__item--active' : 'bulbs__item');
+  return ledValues.map(led => led && props.isConnected ? 'bulbs__item bulbs__item--active' : 'bulbs__item');
 });
 
 const toggleBtn = (btnId) => {

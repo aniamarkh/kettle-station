@@ -1,6 +1,10 @@
 <script setup>
 import { ref, computed } from 'vue';
 
+defineProps({
+  isIncorrect: Boolean,
+});
+
 const password = ref('');
 const isError = ref(false);
 const emit = defineEmits(['submit-password']);
@@ -21,7 +25,9 @@ const onSubmit = () => {
 
 <template>
   <form class="password-form" @submit.prevent="onSubmit">
-    <label class="password-form__label">Please enter the kettle password</label>
+    <label class="password-form__label">
+      {{ !isIncorrect ? 'Please enter the kettle password' : 'Please enter correct password >:(' }}
+    </label>
     <input autocomplete="on" @input="isError = false" :class="inputClass" type="password" placeholder="here"
       v-model="password" />
     <button class="password-form__btn">ok!</button>
@@ -54,7 +60,6 @@ const onSubmit = () => {
 
 .password-form__input--error {
   box-shadow: inset 0 0 0 3px #ff0000a4;
-  color: white;
 }
 
 .password-form__btn {

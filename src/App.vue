@@ -4,11 +4,19 @@ import KettleStation from './components/KettleStation.vue';
 import PasswordForm from './components/PasswordForm.vue';
 
 const password = ref(null);
+const isIncorrect = ref(false);
 
 const onPasswordSubmitted = (submittedPassword) => {
   password.value = submittedPassword;
   localStorage.setItem('kettlepass', password.value);
+  isIncorrect.value = false;
 };
+
+const onIncorrectPassword = () => {
+  localStorage.removeItem('kettlepass');
+  password.value = null;
+  isIncorrect.value = true;
+}
 
 onMounted(() => {
   const kettleValue = localStorage.getItem('kettlepass');
@@ -20,8 +28,10 @@ onMounted(() => {
 
 <template>
   <main>
-    <PasswordForm v-if="!password" @submit-password="onPasswordSubmitted" />
-    <KettleStation v-if="password" :password="password" />
+    <Transition mode="out-in">
+      <PasswordForm v-if="!password" @submit-password="onPasswordSubmitted" :is-incorrect="isIncorrect" />
+      <KettleStation v-else-if="password" @show-form="onIncorrectPassword" :password="password" />
+    </Transition>
   </main>
 </template>
 

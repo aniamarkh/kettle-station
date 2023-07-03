@@ -7,6 +7,7 @@ import TempControls from './TempControls.vue';
 const props = defineProps({
   password: String,
 });
+const emit = defineEmits(['show-form']);
 
 const isConnecting = ref(false);
 const isConnected = ref(false);
@@ -24,6 +25,14 @@ const ledData = ref({
 
 let socket;
 let retryCount = 0;
+let pingInterval = null;
+const clearInterval = () => {
+  if (pingInterval !== null) {
+    console.log('clear interval');
+    clearInterval(pingInterval);
+    pingInterval = null;
+  }
+};
 
 const initializeWebSocket = () => {
   isConnecting.value = true;
@@ -36,8 +45,8 @@ const initializeWebSocket = () => {
     return;
   }
 
-  socket = new WebSocket(((window.location.protocol === "https:") ? "wss://" : "ws://") + window.location.host + "/ws");
-  // socket = new WebSocket('ws://localhost:8080/');
+  socket = new WebSocket(((window.location.protocol === "https:") ? "wss://" : "ws://") + window.location.host);
+  // socket = new WebSocket('ws://localhost:8000/');
 
   socket.onopen = () => {
     retryCount = 0;
@@ -46,21 +55,26 @@ const initializeWebSocket = () => {
   socket.onmessage = event => {
     const data = JSON.parse(event.data);
 
-    if (data.o === 'challenge') {
+    if (data.t === 'challenge') {
       socket.send(JSON.stringify(
         {
           o: 'challenge',
           d: SHA256(props.password + data.d).toString(CryptoJS.enc.Hex),
+          i: messageId,
         }
       ));
     };
 
-    if (data.o === 'challenge_response') {
+    if (data.t === 'challenge_response') {
+      isConnecting.value = false;
       if (data.d) {
         isConnected.value = true;
         showConnected();
+        clearInterval();
+        pingInterval = setInterval(() => { socket.send(JSON.stringify({ o: 'ping' })) }, 30000);
       } else {
-        showError();
+        emit('show-form');
+        socket.close();
       }
     };
 
@@ -76,6 +90,7 @@ const initializeWebSocket = () => {
 
   socket.onclose = () => {
     isConnected.value = false;
+    clearInterval();
   };
 
   socket.onerror = error => {
@@ -95,11 +110,11 @@ onUnmounted(() => {
 });
 
 const powerBtnClass = computed(() => {
-  return ledData.value.led_power ? 'kettle-panel__power-btn kettle-panel__power-btn--active' : 'kettle-panel__power-btn';
+  return ledData.value.led_power && isConnected.value ? 'kettle-panel__power-btn kettle-panel__power-btn--active' : 'kettle-panel__power-btn';
 });
 
 const disableBtns = computed(() => {
-  return !isConnected.value || isWaitingForResponse.value;
+  return !isConnected.value || isWaitingForResponse.value || isConnecting.value;
 });
 
 let messageId = 0;
