@@ -25,27 +25,31 @@ const ledData = ref({
 
 let socket;
 let retryCount = 0;
-let messageId = 0;
 const pendingResponses = new Map();
 let pingInterval = null;
 
-const sendMessage = (message, timeout = null) => {
-  return new Promise((resolve, reject) => {
-    socket.send(JSON.stringify(message));
-    pendingResponses.set(message.i, { resolve, reject });
 
-    if (timeout) {
-      const timer = setTimeout(() => {
-        if (pendingResponses.has(message.i)) {
-          pendingResponses.delete(message.i);
-          reject(new Error());
-        }
-      }, timeout);
+const sendMessage = (() => {
+  let messageId = 0;
+  return (message, timeout = null) => {
+    messageId++;
+    return new Promise((resolve, reject) => {
+      socket.send(JSON.stringify({ ...message, i: messageId }));
+      pendingResponses.set(messageId, { resolve, reject });
 
-      pendingResponses.get(message.i).timeout = timer;
-    }
-  });
-};
+      if (timeout) {
+        const timer = setTimeout(() => {
+          if (pendingResponses.has(messageId)) {
+            pendingResponses.delete(messageId);
+            reject(new Error());
+          }
+        }, timeout);
+
+        pendingResponses.get(messageId).timeout = timer;
+      }
+    });
+  };
+})();
 
 const startPing = () => {
   if (pingInterval) {
@@ -53,7 +57,7 @@ const startPing = () => {
   }
 
   pingInterval = setInterval(() => {
-    sendMessage({ o: 'ping', i: ++messageId }, 10000)
+    sendMessage({ o: 'ping' }, 10000)
       .catch(() => {
         socket.close();
         showError();
@@ -64,12 +68,10 @@ const startPing = () => {
   }, 30000);
 };
 
-
 const initializeWebSocket = () => {
   isConnected.value = false;
   isError.value = false;
   isConnecting.value = true;
-  messageId = 0;
 
   if (retryCount > 5) {
     console.error('💔 Failed to reconnect after several attempts.');
@@ -92,7 +94,6 @@ const initializeWebSocket = () => {
       sendMessage({
         o: 'challenge',
         d: CryptoJS.SHA256(props.password + data.d).toString(CryptoJS.enc.Hex),
-        i: ++messageId,
       }).then(() => {
         isConnecting.value = false;
         isConnected.value = true;
@@ -136,7 +137,7 @@ const initializeWebSocket = () => {
   };
 
   socket.onclose = () => {
-    clearInterval(pingInterval);
+    startPing();
     isConnected.value = false;
   };
 
@@ -167,7 +168,7 @@ const disableBtns = computed(() => {
 const toggleBtn = (btnId) => {
   if (isConnected.value) {
     isWaitingForResponse.value = true;
-    sendMessage({ o: 'button_press', d: btnId, i: ++messageId })
+    sendMessage({ o: 'button_press', d: btnId })
       .catch(() => {
         showError();
       })
