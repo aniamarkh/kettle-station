@@ -1,14 +1,13 @@
 <script setup>
 import { onMounted, onUnmounted, computed, ref } from 'vue';
 import CryptoJS from 'crypto-js';
-import { v4 as uuidv4 } from 'uuid';
 import StatusMessage from './StatusMessage.vue';
 import TempControls from './TempControls.vue';
 
 const props = defineProps({
   password: String,
 });
-const emit = defineEmits(['show-form']);
+const emit = defineEmits(['on-incorrect-password']);
 
 const isConnecting = ref(false);
 const isConnected = ref(false);
@@ -26,21 +25,54 @@ const ledData = ref({
 
 let socket;
 let retryCount = 0;
+let messageId = 0;
 const pendingResponses = new Map();
+let pingInterval = null;
 
-const sendMessage = (message) => {
+const sendMessage = (message, timeout = null) => {
   return new Promise((resolve, reject) => {
     socket.send(JSON.stringify(message));
     pendingResponses.set(message.i, { resolve, reject });
+
+    if (timeout) {
+      const timer = setTimeout(() => {
+        if (pendingResponses.has(message.i)) {
+          pendingResponses.delete(message.i);
+          reject(new Error());
+        }
+      }, timeout);
+
+      pendingResponses.get(message.i).timeout = timer;
+    }
   });
 };
 
+const startPing = () => {
+  if (pingInterval) {
+    clearInterval(pingInterval);
+  }
+
+  pingInterval = setInterval(() => {
+    sendMessage({ o: 'ping', i: ++messageId }, 10000)
+      .catch(() => {
+        socket.close();
+        showError();
+        console.log('🧐 No pong received. Restarting connection.');
+        clearInterval(pingInterval);
+        setTimeout(initializeWebSocket, 3000 * (++retryCount));
+      });
+  }, 30000);
+};
+
+
 const initializeWebSocket = () => {
+  isConnected.value = false;
+  isError.value = false;
   isConnecting.value = true;
+  messageId = 0;
 
   if (retryCount > 5) {
-    showError();
-    console.error('Failed to reconnect after several attempts.');
+    console.error('💔 Failed to reconnect after several attempts.');
     isConnecting.value = false;
     isError.value = true;
     return;
@@ -60,43 +92,51 @@ const initializeWebSocket = () => {
       sendMessage({
         o: 'challenge',
         d: CryptoJS.SHA256(props.password + data.d).toString(CryptoJS.enc.Hex),
-        i: uuidv4(),
+        i: ++messageId,
       }).then(() => {
         isConnecting.value = false;
         isConnected.value = true;
         showConnected();
+        startPing();
       }).catch(() => {
-        emit('show-form');
+        emit('on-incorrect-password');
+        console.log('😐 Please enter correct password')
         socket.close();
       });
     }
 
+    if (data.t === 'status') {
+      ledData.value = data.d;
+    }
+
     if (data.i && pendingResponses.has(data.i)) {
-      const { resolve, reject } = pendingResponses.get(data.i);
+      const { resolve, reject, timeout } = pendingResponses.get(data.i);
+      if (timeout) clearTimeout(timeout);
 
       switch (data.t) {
         case 'challenge_response':
           if (data.d) resolve(data);
-          else reject(new Error('Bad response: Incorrect password!'));
+          else reject();
           break;
         case 'response':
           if (data.d === 'ok') resolve(data);
-          else reject(new Error(`Bad response: ${data.d}`));
+          else reject();
+          break;
+        case 'pong':
+          resolve(data);
           break;
       }
-
       pendingResponses.delete(data.i);
-    } else if (data.t === 'status') {
-      ledData.value = data.d;
     }
 
     if (data.e) {
-      console.log(`Error Occurred: ${data.e}`);
+      console.log(`🤕 Error Occurred: ${data.e}`);
       showError();
     };
   };
 
   socket.onclose = () => {
+    clearInterval(pingInterval);
     isConnected.value = false;
   };
 
@@ -127,7 +167,7 @@ const disableBtns = computed(() => {
 const toggleBtn = (btnId) => {
   if (isConnected.value) {
     isWaitingForResponse.value = true;
-    sendMessage({ o: 'button_press', d: btnId, i: uuidv4() })
+    sendMessage({ o: 'button_press', d: btnId, i: ++messageId })
       .catch(() => {
         showError();
       })

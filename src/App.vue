@@ -30,7 +30,7 @@ onMounted(() => {
   <main>
     <Transition mode="out-in">
       <PasswordForm v-if="!password" @submit-password="onPasswordSubmitted" :is-incorrect="isIncorrect" />
-      <KettleStation v-else-if="password" @show-form="onIncorrectPassword" :password="password" />
+      <KettleStation v-else-if="password" @on-incorrect-password="onIncorrectPassword" :password="password" />
     </Transition>
   </main>
 </template>
