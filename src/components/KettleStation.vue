@@ -13,6 +13,7 @@ const isConnecting = ref(false);
 const isConnected = ref(false);
 const isWaitingForResponse = ref(false);
 const isError = ref(false);
+const isPasswordIncorrect = ref(false);
 
 const ledData = ref({
   led_power: 0,
@@ -59,11 +60,9 @@ const startPing = () => {
   pingInterval = setInterval(() => {
     sendMessage({ o: 'ping' }, 10000)
       .catch(() => {
-        socket.close();
         showError();
+        socket.close();
         console.log('🧐 No pong received. Restarting connection.');
-        clearInterval(pingInterval);
-        setTimeout(initializeWebSocket, 3000 * (++retryCount));
       });
   }, 30000);
 };
@@ -95,11 +94,13 @@ const initializeWebSocket = () => {
         o: 'challenge',
         d: CryptoJS.SHA256(props.password + data.d).toString(CryptoJS.enc.Hex),
       }).then(() => {
+        isPasswordIncorrect.value = false;
         isConnecting.value = false;
         isConnected.value = true;
         showConnected();
         startPing();
       }).catch(() => {
+        isPasswordIncorrect.value = true;
         emit('on-incorrect-password');
         console.log('😐 Please enter correct password')
         socket.close();
@@ -116,15 +117,13 @@ const initializeWebSocket = () => {
 
       switch (data.t) {
         case 'challenge_response':
-          if (data.d) resolve(data);
-          else reject();
+          data.d ? resolve() : reject();
           break;
         case 'response':
-          if (data.d === 'ok') resolve(data);
-          else reject();
+          data.d === 'ok' ? resolve() : reject();
           break;
         case 'pong':
-          resolve(data);
+          resolve();
           break;
       }
       pendingResponses.delete(data.i);
@@ -137,15 +136,16 @@ const initializeWebSocket = () => {
   };
 
   socket.onclose = () => {
-    startPing();
-    isConnected.value = false;
+    clearInterval(pingInterval);
+    if (!isPasswordIncorrect.value) {
+      setTimeout(initializeWebSocket, 3000 * (++retryCount));
+    }
   };
 
   socket.onerror = error => {
     showError();
     console.error(`WebSocket Error: ${error}`);
     socket.close();
-    setTimeout(initializeWebSocket, 3000 * (++retryCount));
   };
 };
 
