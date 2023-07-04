@@ -1,6 +1,7 @@
 <script setup>
 import { onMounted, onUnmounted, computed, ref } from 'vue';
-import CryptoJS, { SHA256 } from 'crypto-js';
+import CryptoJS from 'crypto-js';
+import { v4 as uuidv4 } from 'uuid';
 import StatusMessage from './StatusMessage.vue';
 import TempControls from './TempControls.vue';
 
@@ -25,13 +26,13 @@ const ledData = ref({
 
 let socket;
 let retryCount = 0;
-let pingInterval = null;
-const clearInterval = () => {
-  if (pingInterval !== null) {
-    console.log('clear interval');
-    clearInterval(pingInterval);
-    pingInterval = null;
-  }
+const pendingResponses = new Map();
+
+const sendMessage = (message) => {
+  return new Promise((resolve, reject) => {
+    socket.send(JSON.stringify(message));
+    pendingResponses.set(message.i, { resolve, reject });
+  });
 };
 
 const initializeWebSocket = () => {
@@ -45,8 +46,8 @@ const initializeWebSocket = () => {
     return;
   }
 
-  socket = new WebSocket(((window.location.protocol === "https:") ? "wss://" : "ws://") + window.location.host);
-  // socket = new WebSocket('ws://localhost:8000/');
+  // socket = new WebSocket(((window.location.protocol === "https:") ? "wss://" : "ws://") + window.location.host);
+  socket = new WebSocket('ws://localhost:8000/');
 
   socket.onopen = () => {
     retryCount = 0;
@@ -56,41 +57,47 @@ const initializeWebSocket = () => {
     const data = JSON.parse(event.data);
 
     if (data.t === 'challenge') {
-      socket.send(JSON.stringify(
-        {
-          o: 'challenge',
-          d: SHA256(props.password + data.d).toString(CryptoJS.enc.Hex),
-          i: messageId,
-        }
-      ));
-    };
-
-    if (data.t === 'challenge_response') {
-      isConnecting.value = false;
-      if (data.d) {
+      sendMessage({
+        o: 'challenge',
+        d: CryptoJS.SHA256(props.password + data.d).toString(CryptoJS.enc.Hex),
+        i: uuidv4(),
+      }).then(() => {
+        isConnecting.value = false;
         isConnected.value = true;
         showConnected();
-        clearInterval();
-        pingInterval = setInterval(() => { socket.send(JSON.stringify({ o: 'ping' })) }, 30000);
-      } else {
+      }).catch(() => {
         emit('show-form');
         socket.close();
-      }
-    };
+      });
+    }
 
-    if (data.t === 'status') ledData.value = data.d;
+    if (data.i && pendingResponses.has(data.i)) {
+      const { resolve, reject } = pendingResponses.get(data.i);
+
+      switch (data.t) {
+        case 'challenge_response':
+          if (data.d) resolve(data);
+          else reject(new Error('Bad response: Incorrect password!'));
+          break;
+        case 'response':
+          if (data.d === 'ok') resolve(data);
+          else reject(new Error(`Bad response: ${data.d}`));
+          break;
+      }
+
+      pendingResponses.delete(data.i);
+    } else if (data.t === 'status') {
+      ledData.value = data.d;
+    }
 
     if (data.e) {
       console.log(`Error Occurred: ${data.e}`);
       showError();
     };
-
-    isWaitingForResponse.value = false;
   };
 
   socket.onclose = () => {
     isConnected.value = false;
-    clearInterval();
   };
 
   socket.onerror = error => {
@@ -117,14 +124,16 @@ const disableBtns = computed(() => {
   return !isConnected.value || isWaitingForResponse.value || isConnecting.value;
 });
 
-let messageId = 0;
-const pressedButtonId = ref(null);
-
 const toggleBtn = (btnId) => {
   if (isConnected.value) {
     isWaitingForResponse.value = true;
-    pressedButtonId.value = btnId;
-    socket.send(JSON.stringify({ o: 'button_press', d: btnId, i: ++messageId }));
+    sendMessage({ o: 'button_press', d: btnId, i: uuidv4() })
+      .catch(() => {
+        showError();
+      })
+      .finally(() => {
+        isWaitingForResponse.value = false;
+      });
   }
 };
 
