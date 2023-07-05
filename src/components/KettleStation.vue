@@ -11,9 +11,10 @@ const emit = defineEmits(['on-incorrect-password']);
 
 const isConnecting = ref(false);
 const isConnected = ref(false);
+const isCorrectPassword = ref(false);
+const isConnectedMessage = ref(false);
 const isWaitingForResponse = ref(false);
 const isError = ref(false);
-const isPasswordIncorrect = ref(false);
 
 const ledData = ref({
   led_power: 0,
@@ -29,6 +30,26 @@ let retryCount = 0;
 const pendingResponses = new Map();
 let pingInterval = null;
 
+const onConnected = () => {
+  isCorrectPassword.value = true;
+  isConnecting.value = false;
+  isConnected.value = true;
+
+  isConnectedMessage.value = true;
+  setTimeout(() => {
+    isConnectedMessage.value = false;
+  }, 2000);
+
+  startPing();
+};
+
+const onError = (error) => {
+  console.error(error);
+  isError.value = true;
+  setTimeout(() => {
+    isError.value = false;
+  }, 2000);
+};
 
 const sendMessage = (() => {
   let messageId = 0;
@@ -60,15 +81,50 @@ const startPing = () => {
   pingInterval = setInterval(() => {
     sendMessage({ o: 'ping' }, 10000)
       .catch(() => {
-        showError();
+        onError('😴 No pong received: Restarting connection');
         socket.close();
-        console.log('🧐 No pong received. Restarting connection.');
       });
   }, 30000);
 };
 
+const handleChallenge = data => {
+  sendMessage({
+    o: 'challenge',
+    d: CryptoJS.SHA256(props.password + data.d).toString(CryptoJS.enc.Hex),
+  }).then(() => onConnected())
+    .catch(() => {
+      isCorrectPassword.value = false;
+      emit('on-incorrect-password');
+      socket.close();
+    });
+};
+
+const handleResponse = data => {
+  if (pendingResponses.has(data.i)) {
+    const { resolve, reject, timeout } = pendingResponses.get(data.i);
+
+    if (timeout) clearTimeout(timeout);
+    data.d ? resolve(data.d) : reject(data.e);
+    pendingResponses.delete(data.i);
+  } else {
+    console.warn(`🧐 Unexpected response: no matching request for id ${data.i}`);
+  }
+};
+
+const toggleBtn = (btnId) => {
+  if (isConnected.value) {
+    isWaitingForResponse.value = true;
+    sendMessage({ o: 'button_press', d: btnId })
+      .catch((error) => {
+        onError(`🤕 Error while handle button press: ${error}`);
+      })
+      .finally(() => {
+        isWaitingForResponse.value = false;
+      });
+  }
+};
+
 const initializeWebSocket = () => {
-  isConnected.value = false;
   isError.value = false;
   isConnecting.value = true;
 
@@ -87,65 +143,39 @@ const initializeWebSocket = () => {
   };
 
   socket.onmessage = event => {
-    const data = JSON.parse(event.data);
-
-    if (data.t === 'challenge') {
-      sendMessage({
-        o: 'challenge',
-        d: CryptoJS.SHA256(props.password + data.d).toString(CryptoJS.enc.Hex),
-      }).then(() => {
-        isPasswordIncorrect.value = false;
-        isConnecting.value = false;
-        isConnected.value = true;
-        showConnected();
-        startPing();
-      }).catch(() => {
-        isPasswordIncorrect.value = true;
-        emit('on-incorrect-password');
-        console.log('😐 Please enter correct password')
-        socket.close();
-      });
-    }
-
-    if (data.t === 'status') {
-      ledData.value = data.d;
-    }
-
-    if (data.i && pendingResponses.has(data.i)) {
-      const { resolve, reject, timeout } = pendingResponses.get(data.i);
-      if (timeout) clearTimeout(timeout);
+    try {
+      const data = JSON.parse(event.data);
 
       switch (data.t) {
-        case 'challenge_response':
-          data.d ? resolve() : reject();
+        case 'challenge':
+          handleChallenge(data);
           break;
         case 'response':
-          data.d === 'ok' ? resolve() : reject();
+          handleResponse(data);
           break;
-        case 'pong':
-          resolve();
+        case 'status':
+          ledData.value = data.d;
+          break;
+        default:
+          console.error(`🧐 Unexpected message type: ${data.t}`);
           break;
       }
-      pendingResponses.delete(data.i);
+    } catch (error) {
+      onError(`🤕 Error while processing message: ${error}`);
     }
-
-    if (data.e) {
-      console.log(`🤕 Error Occurred: ${data.e}`);
-      showError();
-    };
   };
 
   socket.onclose = () => {
+    pendingResponses.clear();
+    isConnected.value = false;
     clearInterval(pingInterval);
-    if (!isPasswordIncorrect.value) {
-      setTimeout(initializeWebSocket, 3000 * (++retryCount));
+    if (isCorrectPassword.value) {
+      setTimeout(initializeWebSocket, 1000 * (++retryCount));
     }
   };
 
-  socket.onerror = error => {
-    showError();
-    console.error(`WebSocket Error: ${error}`);
-    socket.close();
+  socket.onerror = () => {
+    onError('🤕 Websocket Error');
   };
 };
 
@@ -164,34 +194,6 @@ const powerBtnClass = computed(() => {
 const disableBtns = computed(() => {
   return !isConnected.value || isWaitingForResponse.value || isConnecting.value;
 });
-
-const toggleBtn = (btnId) => {
-  if (isConnected.value) {
-    isWaitingForResponse.value = true;
-    sendMessage({ o: 'button_press', d: btnId })
-      .catch(() => {
-        showError();
-      })
-      .finally(() => {
-        isWaitingForResponse.value = false;
-      });
-  }
-};
-
-const showError = () => {
-  isError.value = true;
-  setTimeout(() => {
-    isError.value = false;
-  }, 2000);
-};
-
-const isConnectedMessage = ref(false);
-const showConnected = () => {
-  isConnectedMessage.value = true;
-  setTimeout(() => {
-    isConnectedMessage.value = false;
-  }, 2000);
-};
 </script>
 
 <template>

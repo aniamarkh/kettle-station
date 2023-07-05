@@ -14,6 +14,7 @@ const onPasswordSubmitted = (submittedPassword) => {
 
 const onIncorrectPassword = () => {
   localStorage.removeItem('kettlepass');
+  console.log('😐 Please enter correct password');
   password.value = null;
   isIncorrect.value = true;
 }

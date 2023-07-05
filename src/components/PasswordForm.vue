@@ -30,7 +30,7 @@ const onSubmit = () => {
     </label>
     <input autocomplete="on" @input="isError = false" :class="inputClass" type="password" placeholder="here"
       v-model="password" />
-    <button class="password-form__btn">ok!</button>
+    <button class="password-form__btn">submit</button>
   </form>
 </template>
 
@@ -63,6 +63,8 @@ const onSubmit = () => {
 }
 
 .password-form__btn {
+  color: white;
+  font-weight: 600;
   width: 110px;
   height: 50px;
 }
