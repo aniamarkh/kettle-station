@@ -11,7 +11,7 @@ const emit = defineEmits(['on-incorrect-password']);
 
 const isConnecting = ref(false);
 const isConnected = ref(false);
-const isCorrectPassword = ref(false);
+const isCorrectPassword = ref(true);
 const isConnectedMessage = ref(false);
 const isWaitingForResponse = ref(false);
 const isError = ref(false);
