@@ -170,7 +170,7 @@ const initializeWebSocket = () => {
     isConnected.value = false;
     clearInterval(pingInterval);
     if (isCorrectPassword.value) {
-      setTimeout(initializeWebSocket, 1000 * (++retryCount));
+      setTimeout(initializeWebSocket, 2000 * (++retryCount));
     }
   };
 
