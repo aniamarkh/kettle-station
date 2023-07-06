@@ -2,8 +2,8 @@
 import { computed } from 'vue';
 
 const props = defineProps({
-  isConnected: Boolean,
-  isWaitingForResponse: Boolean,
+  isConnected: Object,
+  isWaitingForResponse: Object,
   ledData: Object,
   disableBtns: Boolean
 });

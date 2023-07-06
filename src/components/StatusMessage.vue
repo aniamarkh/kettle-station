@@ -1,17 +1,17 @@
 <script setup>
 defineProps({
-  isConnectedMessage: Boolean,
-  isConnecting: Boolean,
-  isError: Boolean,
+  isConnectedMessage: Object,
+  isConnecting: Object,
+  isError: Object,
 })
 </script>
 
 <template>
   <div class="kettle-panel__status">
     <Transition mode="out-in">
-      <h3 v-if="isConnecting && !isError">👀 connecting 👀</h3>
-      <h3 v-else-if="isConnectedMessage">✨ connected 💫</h3>
-      <h3 v-else-if="isError"> 🤡 error 🤡 </h3>
+      <h3 v-if="isConnecting.value && !isError.value">👀 connecting 👀</h3>
+      <h3 v-else-if="isConnectedMessage.value">✨ connected 💫</h3>
+      <h3 v-else-if="isError.value"> 🤡 error 🤡 </h3>
     </Transition>
   </div>
 </template>
