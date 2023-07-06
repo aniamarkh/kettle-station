@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onBeforeMount } from 'vue';
 import KettleStation from './components/KettleStation.vue';
 import PasswordForm from './components/PasswordForm.vue';
 
@@ -19,7 +19,7 @@ const onIncorrectPassword = () => {
   isIncorrect.value = true;
 }
 
-onMounted(() => {
+onBeforeMount(() => {
   const kettleValue = localStorage.getItem('kettlepass');
   if (kettleValue) {
     password.value = kettleValue;

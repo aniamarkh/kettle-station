@@ -1,6 +1,7 @@
 <script setup>
 import { onMounted, onUnmounted, computed, ref } from 'vue';
 import SocketManager from '../managers/socket.js';
+import StatusManager from '../managers/status.js';
 import StatusMessage from './StatusMessage.vue';
 import TempControls from './TempControls.vue';
 
@@ -20,10 +21,12 @@ const ledData = ref({
 
 const updateLedData = (data) => ledData.value = data;
 
+const statusManager = new StatusManager();
 const connection = new SocketManager(
   props.password,
   () => emit('on-incorrect-password'),
-  updateLedData);
+  updateLedData,
+  statusManager);
 
 onMounted(() => connection.initializeWebSocket());
 
@@ -34,11 +37,15 @@ onUnmounted(() => {
 });
 
 const powerBtnClass = computed(() => {
-  return ledData.value.led_power && connection.isConnected.value ? 'kettle-panel__power-btn kettle-panel__power-btn--active' : 'kettle-panel__power-btn';
+  return ledData.value.led_power ?
+    'kettle-panel__power-btn kettle-panel__power-btn--active' : 'kettle-panel__power-btn';
 });
 
 const disableBtns = computed(() => {
-  return !connection.isConnected.value || connection.isWaitingForResponse.value;
+  return !statusManager.currentStatus.value
+    || statusManager.currentStatus.value === 'closed'
+    || statusManager.currentStatus.value === 'connecting'
+    || statusManager.currentStatus.value === 'awaiting';
 });
 
 const toggleButton = (buttonId) => {
@@ -48,10 +55,8 @@ const toggleButton = (buttonId) => {
 
 <template>
   <div class="kettle-panel">
-    <StatusMessage :is-connected-message="connection.isConnectedMessage" :is-connecting="connection.isConnecting"
-      :is-error="connection.isError" />
-    <TempControls :is-connected="connection.isConnected" :is-waiting-for-response="connection.isWaitingForResponse"
-      :led-data="ledData" :disable-btns="disableBtns" @toggle-btn="toggleButton" />
+    <StatusMessage :current-status="statusManager.currentStatus.value" />
+    <TempControls :led-data="ledData" :disable-btns="disableBtns" @toggle-btn="toggleButton" />
     <button @click="toggleButton(0)" :class="powerBtnClass" :disabled="disableBtns"></button>
   </div>
 </template>
