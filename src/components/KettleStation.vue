@@ -1,32 +1,35 @@
-<script setup>
+<script setup lang="ts">
 import { onMounted, onUnmounted, computed, ref } from 'vue';
+import type { Ref } from 'vue';
 import SocketManager from '../managers/socket.js';
 import StatusManager from '../managers/status.js';
 import StatusMessage from './StatusMessage.vue';
 import TempControls from './TempControls.vue';
+import type { LedData } from '../types';
 
 const props = defineProps({
   password: String,
 });
 const emit = defineEmits(['on-incorrect-password']);
 
-const ledData = ref({
+const ledData: Ref<LedData> = ref({
   led_power: 0,
   led_70: 0,
   led_80: 0,
   led_90: 0,
   led_100: 0,
-  led_keepwarm: 0
+  led_keepwarm: 0,
 });
 
-const updateLedData = (data) => ledData.value = data;
+const updateLedData = (data: LedData) => (ledData.value = data);
 
 const statusManager = new StatusManager();
 const connection = new SocketManager(
   props.password,
   () => emit('on-incorrect-password'),
   updateLedData,
-  statusManager);
+  statusManager
+);
 
 onMounted(() => connection.initializeWebSocket());
 
@@ -37,18 +40,21 @@ onUnmounted(() => {
 });
 
 const powerBtnClass = computed(() => {
-  return ledData.value.led_power ?
-    'kettle-panel__power-btn kettle-panel__power-btn--active' : 'kettle-panel__power-btn';
+  return ledData.value.led_power
+    ? 'kettle-panel__power-btn kettle-panel__power-btn--active'
+    : 'kettle-panel__power-btn';
 });
 
 const disableBtns = computed(() => {
-  return !statusManager.currentStatus.value
-    || statusManager.currentStatus.value === 'closed'
-    || statusManager.currentStatus.value === 'connecting'
-    || statusManager.currentStatus.value === 'awaiting';
+  return (
+    !statusManager.currentStatus.value ||
+    statusManager.currentStatus.value === 'closed' ||
+    statusManager.currentStatus.value === 'connecting' ||
+    statusManager.currentStatus.value === 'awaiting'
+  );
 });
 
-const toggleButton = (buttonId) => {
+const toggleButton = (buttonId: number) => {
   connection.onButtonPress(buttonId);
 };
 </script>

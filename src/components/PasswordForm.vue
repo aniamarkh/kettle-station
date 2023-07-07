@@ -1,16 +1,19 @@
-<script setup>
+<script setup lang="ts">
 import { ref, computed } from 'vue';
+import type { Ref } from 'vue';
 
 defineProps({
   isIncorrect: Boolean,
 });
 
-const password = ref('');
-const isError = ref(false);
+const password: Ref<string> = ref('');
+const isError: Ref<boolean> = ref(false);
 const emit = defineEmits(['submit-password']);
 
 const inputClass = computed(() => {
-  return isError.value ? 'password-form__input password-form__input--error' : 'password-form__input'
+  return isError.value
+    ? 'password-form__input password-form__input--error'
+    : 'password-form__input';
 });
 
 const onSubmit = () => {
@@ -20,7 +23,7 @@ const onSubmit = () => {
     isError.value = false;
     emit('submit-password', password.value);
   }
-}
+};
 </script>
 
 <template>
@@ -28,8 +31,14 @@ const onSubmit = () => {
     <label class="password-form__label">
       {{ !isIncorrect ? 'Please enter the kettle password' : 'Please enter correct password >:(' }}
     </label>
-    <input autocomplete="on" @input="isError = false" :class="inputClass" type="password" placeholder="here"
-      v-model="password" />
+    <input
+      autocomplete="on"
+      @input="isError = false"
+      :class="inputClass"
+      type="password"
+      placeholder="here"
+      v-model="password"
+    />
     <button class="password-form__btn">submit</button>
   </form>
 </template>

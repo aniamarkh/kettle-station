@@ -20,24 +20,24 @@ export default class SocketManager {
 
   initializeWebSocket() {
     this.statusManager.updateStatus(this.statusManager.statusEnum.CONNECTING);
-  
+
     if (this.retryCount > 5) {
       console.error('💔 Failed to reconnect after several attempts.');
       this.statusManager.updateStatus(this.statusManager.statusEnum.CLOSED);
       return;
     }
-  
+
     // socket = new WebSocket(((window.location.protocol === "https:") ? "wss://" : "ws://") + window.location.host);
     this.socket = new WebSocket('ws://localhost:8000/');
 
     this.socket.onopen = () => {
       this.retryCount = 0;
     };
-  
-    this.socket.onmessage = event => {
+
+    this.socket.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-  
+
         switch (data.t) {
           case 'challenge':
             this.handleChallenge(data);
@@ -56,7 +56,7 @@ export default class SocketManager {
         this.onError(`🤕 Error while processing message: ${error}`);
       }
     };
-  
+
     this.socket.onclose = () => {
       this.pendingResponses.clear();
       this.messageId = 0;
@@ -72,10 +72,10 @@ export default class SocketManager {
 
       this.statusManager.updateStatus(this.statusManager.statusEnum.CLOSED);
       if (this.isAuthorized.value || this.isAuthorized.value === null) {
-        setTimeout(this.initializeWebSocket.bind(this), 2000 * (++this.retryCount));
+        setTimeout(this.initializeWebSocket.bind(this), 2000 * ++this.retryCount);
       }
     };
-  
+
     this.socket.onerror = () => {
       console.error('🤕 Websocket Error');
     };
@@ -84,8 +84,9 @@ export default class SocketManager {
   handleChallenge(data) {
     this.sendMessage({
       o: 'challenge',
-      d: CryptoJS.SHA256(this.password + data.d).toString(CryptoJS.enc.Hex),
-    }).then(() => this.onConnected())
+      d: CryptoJS.SHA256(this.password + data.d).toString(CryptoJS.enc.Hex)
+    })
+      .then(() => this.onConnected())
       .catch(() => {
         this.isAuthorized.value = false;
         if (this.onIncorrectPassword) this.onIncorrectPassword();
@@ -105,11 +106,10 @@ export default class SocketManager {
     }
 
     this.pingInterval = setInterval(() => {
-      this.sendMessage({ o: 'ping' }, 10000)
-        .catch(() => {
-          this.onError('😴 No pong received: Restarting connection');
-          this.close();
-        });
+      this.sendMessage({ o: 'ping' }, 10000).catch(() => {
+        this.onError('😴 No pong received: Restarting connection');
+        this.close();
+      });
     }, 30000);
   }
 
@@ -134,7 +134,7 @@ export default class SocketManager {
   handleResponse(data) {
     if (this.pendingResponses.has(data.i)) {
       const { resolve, reject, timeout } = this.pendingResponses.get(data.i);
-  
+
       if (timeout) clearTimeout(timeout);
       data.d ? resolve(data.d) : reject(data.e);
       this.pendingResponses.delete(data.i);
@@ -142,7 +142,7 @@ export default class SocketManager {
       console.warn(`🧐 Unexpected response: no matching request for id ${data.i}`);
     }
   }
-  
+
   onButtonPress(buttonId) {
     this.statusManager.updateStatus(this.statusManager.statusEnum.AWAITING);
     this.sendMessage({ o: 'button_press', d: buttonId })
