@@ -1,27 +1,29 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import type { LedData } from '../types';
+import Kettle from '../managers/kettle';
+import { BUTTON_ID } from '../types';
 
-const props = defineProps<{ ledData: LedData; disableBtns: boolean }>();
-
-const emit = defineEmits(['toggle-btn']);
+const props = defineProps({
+  kettle: {
+    type: Kettle,
+    required: true,
+  },
+});
 
 const warmBtnClass = computed(() => {
-  return props.ledData.led_keepwarm
+  return props.kettle.ledStatus.value.led_keepwarm && props.kettle.isLedsOn.value
     ? 'temp-controls__warm-btn temp-controls__warm-btn--active'
     : 'temp-controls__warm-btn';
 });
 
 const bulbsClass = computed(() => {
-  const { led_70, led_80, led_90, led_100 } = props.ledData;
+  const { led_70, led_80, led_90, led_100 } = props.kettle.ledStatus.value;
   const ledValues = [led_70, led_80, led_90, led_100];
 
-  return ledValues.map((led) => (led ? 'bulbs__item bulbs__item--active' : 'bulbs__item'));
+  return ledValues.map((led) =>
+    led && props.kettle.isLedsOn.value ? 'bulbs__item bulbs__item--active' : 'bulbs__item'
+  );
 });
-
-const toggleBtn = (btnId: number) => {
-  emit('toggle-btn', btnId);
-};
 </script>
 
 <template>
@@ -33,10 +35,28 @@ const toggleBtn = (btnId: number) => {
       <div :class="bulbsClass[3]"></div>
     </div>
     <div class="temp-controls__btns">
-      <button @click="toggleBtn(1)" :disabled="disableBtns" class="temp-controls__btn">−</button>
-      <button @click="toggleBtn(2)" :disabled="disableBtns" class="temp-controls__btn">+</button>
+      <button
+        @click="kettle.pressButton(BUTTON_ID.BTN_TEMP_DOWN)"
+        :disabled="kettle.isButtonsDisabled.value"
+        class="temp-controls__btn"
+      >
+        −
+      </button>
+      <button
+        @click="kettle.pressButton(BUTTON_ID.BTN_TEMP_UP)"
+        :disabled="kettle.isButtonsDisabled.value"
+        class="temp-controls__btn"
+      >
+        +
+      </button>
     </div>
-    <button @click="toggleBtn(3)" :class="warmBtnClass" :disabled="disableBtns">keep warm</button>
+    <button
+      @click="kettle.pressButton(BUTTON_ID.BTN_KEEP_WARM)"
+      :class="warmBtnClass"
+      :disabled="kettle.isButtonsDisabled.value"
+    >
+      keep warm
+    </button>
   </div>
 </template>
 

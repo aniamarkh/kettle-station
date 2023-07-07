@@ -1,69 +1,43 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, computed, ref } from 'vue';
-import type { Ref } from 'vue';
-import SocketManager from '../managers/socket.js';
-import StatusManager from '../managers/status.js';
-import StatusMessage from './StatusMessage.vue';
+import { onMounted, computed, onUnmounted } from 'vue';
+import Kettle from '../managers/kettle.js';
+import WebSocketManager from '../managers/socket.js';
+import { BUTTON_ID } from '../types';
 import TempControls from './TempControls.vue';
-import type { LedData } from '../types';
+import StatusMessage from './StatusMessage.vue';
 
 const props = defineProps({
-  password: String,
+  password: {
+    type: String,
+    required: true,
+  },
 });
 const emit = defineEmits(['on-incorrect-password']);
 
-const ledData: Ref<LedData> = ref({
-  led_power: 0,
-  led_70: 0,
-  led_80: 0,
-  led_90: 0,
-  led_100: 0,
-  led_keepwarm: 0,
-});
-
-const updateLedData = (data: LedData) => (ledData.value = data);
-
-const statusManager = new StatusManager();
-const connection = new SocketManager(
-  props.password,
-  () => emit('on-incorrect-password'),
-  updateLedData,
-  statusManager
+const connection: WebSocketManager = new WebSocketManager(props.password, () =>
+  emit('on-incorrect-password')
 );
+const kettle: Kettle = new Kettle(connection);
 
-onMounted(() => connection.initializeWebSocket());
-
-onUnmounted(() => {
-  if (connection) {
-    connection.close();
-  }
-});
+onMounted(() => kettle.init());
+onUnmounted(() => kettle.disconnect());
 
 const powerBtnClass = computed(() => {
-  return ledData.value.led_power
+  return kettle.ledStatus.value.led_power && kettle.isLedsOn.value
     ? 'kettle-panel__power-btn kettle-panel__power-btn--active'
     : 'kettle-panel__power-btn';
 });
-
-const disableBtns = computed(() => {
-  return (
-    !statusManager.currentStatus.value ||
-    statusManager.currentStatus.value === 'closed' ||
-    statusManager.currentStatus.value === 'connecting' ||
-    statusManager.currentStatus.value === 'awaiting'
-  );
-});
-
-const toggleButton = (buttonId: number) => {
-  connection.onButtonPress(buttonId);
-};
 </script>
 
 <template>
   <div class="kettle-panel">
-    <StatusMessage :current-status="statusManager.currentStatus.value" />
-    <TempControls :led-data="ledData" :disable-btns="disableBtns" @toggle-btn="toggleButton" />
-    <button @click="toggleButton(0)" :class="powerBtnClass" :disabled="disableBtns"></button>
+    <StatusMessage :status="kettle.connection.status.value" />
+    <TempControls :kettle="kettle" />
+    <button
+      @click="kettle.pressButton(BUTTON_ID.BTN_POWER)"
+      :class="powerBtnClass"
+      :disabled="kettle.isButtonsDisabled.value"
+    ></button>
   </div>
 </template>
 
