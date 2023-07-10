@@ -37,14 +37,14 @@ const bulbsClass = computed(() => {
     <div class="temp-controls__btns">
       <button
         @click="kettle.pressButton(BUTTON_ID.BTN_TEMP_DOWN)"
-        :disabled="kettle.isButtonsDisabled.value"
+        :disabled="kettle.disableTempDown.value"
         class="temp-controls__btn"
       >
         −
       </button>
       <button
         @click="kettle.pressButton(BUTTON_ID.BTN_TEMP_UP)"
-        :disabled="kettle.isButtonsDisabled.value"
+        :disabled="kettle.disableTempUp.value"
         class="temp-controls__btn"
       >
         +
@@ -84,6 +84,7 @@ const bulbsClass = computed(() => {
   width: 35px;
   height: 35px;
   border-radius: 100%;
+  transition: all 0.3s ease-in-out;
 }
 
 .bulbs__item--active {

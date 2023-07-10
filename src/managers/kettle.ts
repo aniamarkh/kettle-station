@@ -23,7 +23,7 @@ export default class Kettle {
     this.connection.registerUpdateData(this.updateLedStatus);
   }
 
-  isButtonsDisabled = computed(() => {
+  public isButtonsDisabled = computed(() => {
     const caseStatuses = [
       STATUS_VALUE.UNINITIALIZED,
       STATUS_VALUE.CLOSED,
@@ -34,21 +34,29 @@ export default class Kettle {
     return caseStatuses.includes(this.connection.status.value);
   });
 
-  isLedsOn = computed(() => {
+  public disableTempDown = computed(() => {
+    return this.isButtonsDisabled.value || !this.ledStatus.value.led_70 ? true : false;
+  });
+
+  public disableTempUp = computed(() => {
+    return this.isButtonsDisabled.value || this.ledStatus.value.led_100 ? true : false;
+  });
+
+  public isLedsOn = computed(() => {
     const caseStatuses = [STATUS_VALUE.UNINITIALIZED, STATUS_VALUE.CLOSED, STATUS_VALUE.CONNECTING];
 
     return !caseStatuses.includes(this.connection.status.value);
   });
 
-  init(): void {
+  public init(): void {
     this.connection.init();
   }
 
-  updateLedStatus(ledData: LedData): void {
+  public updateLedStatus(ledData: LedData): void {
     this.ledStatus.value = ledData;
   }
 
-  pressButton(buttonId: BUTTON_ID) {
+  public pressButton(buttonId: BUTTON_ID) {
     this.connection.updateStatus(STATUS_VALUE.WAITING);
     this.connection
       .sendMessage('button_press', buttonId)
@@ -60,7 +68,7 @@ export default class Kettle {
       });
   }
 
-  disconnect() {
+  public disconnect() {
     this.connection.close();
   }
 }
