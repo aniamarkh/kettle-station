@@ -44,7 +44,7 @@ export default class WebSocketManager {
     }
 
     // this.socket = new WebSocket(((window.location.protocol === "https:") ? "wss://" : "ws://") + window.location.host);
-    this.socket = new WebSocket('ws://localhost:8000/');
+    this.socket = new WebSocket('wss://kettle-station.fly.dev');
 
     this.socket.onopen = () => {
       this.retryCount = 0;
