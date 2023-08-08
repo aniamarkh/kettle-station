@@ -29,7 +29,11 @@ const onSubmit = () => {
 <template>
   <form class="password-form" @submit.prevent="onSubmit">
     <label class="password-form__label">
-      {{ !isIncorrect ? 'Please enter the kettle password' : 'Please enter correct password >:(' }}
+      {{
+        !isIncorrect
+          ? `Please enter the kettle password (it's "porol")`
+          : `Please enter correct password (it's "porol")`
+      }}
     </label>
     <input
       autocomplete="on"
@@ -55,6 +59,7 @@ const onSubmit = () => {
 .password-form__label {
   font-size: 16px;
   font-weight: bold;
+  text-align: center;
 }
 
 .password-form__input {
